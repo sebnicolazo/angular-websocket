@@ -75,6 +75,8 @@ function $WebSocketProvider($rootScope, $q, $timeout, $websocketBackend) {
     this.onErrorCallbacks   = [];
     this.onCloseCallbacks   = [];
 
+    this.timeoutConnect = null;
+
     objectFreeze(this._readyStateConstants);
 
     if (url) {
@@ -261,6 +263,11 @@ function $WebSocketProvider($rootScope, $q, $timeout, $websocketBackend) {
 
   $WebSocket.prototype.close = function close(force) {
     if (force || !this.socket.bufferedAmount) {
+      if(force && this.timeoutConnect) {
+        console.log('Cancelling reconnection.');
+        $timeout.cancel(this.timeoutConnect);
+        this.timeoutConnect = null;
+      }
       this.socket.close();
     }
     return this;
@@ -315,7 +322,7 @@ function $WebSocketProvider($rootScope, $q, $timeout, $websocketBackend) {
     var backoffDelaySeconds = backoffDelay / 1000;
     console.log('Reconnecting in ' + backoffDelaySeconds + ' seconds');
 
-    $timeout(angular.bind(this, this._connect), backoffDelay);
+    this.timeoutConnect = $timeout(angular.bind(this, this._connect), backoffDelay);
 
     return this;
   };
