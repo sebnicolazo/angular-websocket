@@ -28,7 +28,7 @@
   var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
     return typeof obj;
   } : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
   };
 
   var Socket;
@@ -106,6 +106,8 @@
       this.onMessageCallbacks = [];
       this.onErrorCallbacks = [];
       this.onCloseCallbacks = [];
+
+      this.timeoutConnect = null;
 
       objectFreeze(this._readyStateConstants);
 
@@ -283,6 +285,11 @@
 
     $WebSocket.prototype.close = function close(force) {
       if (force || !this.socket.bufferedAmount) {
+        if (force && this.timeoutConnect) {
+          console.log('Cancelling reconnection.');
+          $timeout.cancel(this.timeoutConnect);
+          this.timeoutConnect = null;
+        }
         this.socket.close();
       }
       return this;
@@ -335,7 +342,7 @@
       var backoffDelaySeconds = backoffDelay / 1000;
       console.log('Reconnecting in ' + backoffDelaySeconds + ' seconds');
 
-      $timeout(_angular2.default.bind(this, this._connect), backoffDelay);
+      this.timeoutConnect = $timeout(_angular2.default.bind(this, this._connect), backoffDelay);
 
       return this;
     };
